@@ -54,11 +54,13 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
         } else {
             mTwoPane = false;
             getSupportActionBar().setElevation(0f);
+            //액션바 그림자 설정?
         }
 
         ForecastFragment forecastFragment =  ((ForecastFragment)getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_forecast));
         forecastFragment.setUseTodayLayout(!mTwoPane);
+        //어떤 뷰를 선택할 것인가에 대한 설정
 
         SunshineSyncAdapter.initializeSyncAdapter(this);
     }
@@ -92,16 +94,18 @@ public class MainActivity extends ActionBarActivity implements ForecastFragment.
         String location = Utility.getPreferredLocation( this );
         // update the location in our second pane using the fragment manager
             if (location != null && !location.equals(mLocation)) {
-            ForecastFragment ff = (ForecastFragment)getSupportFragmentManager().findFragmentById(R.id.fragment_forecast);
-            if ( null != ff ) {
-                ff.onLocationChanged();
+                ForecastFragment ff = (ForecastFragment)getSupportFragmentManager().findFragmentById(R.id.fragment_forecast);
+
+                if ( null != ff ) {
+                    ff.onLocationChanged();
+                }
+                DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAILFRAGMENT_TAG);
+
+                if ( null != df ) {
+                    df.onLocationChanged(location);
+                }
+                mLocation = location;
             }
-            DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAILFRAGMENT_TAG);
-            if ( null != df ) {
-                df.onLocationChanged(location);
-            }
-            mLocation = location;
-        }
     }
 
     @Override

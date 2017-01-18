@@ -16,9 +16,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -32,6 +34,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
@@ -39,7 +42,9 @@ import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
  */
-public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>,
+        SharedPreferences.OnSharedPreferenceChangeListener {
+
     public static final String LOG_TAG = ForecastFragment.class.getSimpleName();
     private ForecastAdapter mForecastAdapter;
 
@@ -81,6 +86,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     static final int COL_WEATHER_CONDITION_ID = 6;
     static final int COL_COORD_LAT = 7;
     static final int COL_COORD_LONG = 8;
+
 
     /**
      * A callback interface that all activities containing this fragment must
@@ -137,10 +143,18 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
+
+       // View emptyView = rootView.findViewById(R.id.tv_empty_list_view);
+       // mListView.setEmptyView(emptyView);
+
         // Get a reference to the ListView, and attach this adapter to it.
         mListView = (ListView) rootView.findViewById(R.id.listview_forecast);
+        View emptyView = rootView.findViewById(R.id.tv_empty_list_view);
+        mListView.setEmptyView(emptyView);
         mListView.setAdapter(mForecastAdapter);
         // We'll call our MainActivity
+
+
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -180,6 +194,21 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         getLoaderManager().initLoader(FORECAST_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
     }
+
+    @Override
+    public void onResume(){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        super.onResume();
+    }
+
+    @Override
+    public void onPause(){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+        super.onPause();
+    }
+
 
     // since we read the location when we create the loader, all we need to do is restart things
     void onLocationChanged( ) {
@@ -258,6 +287,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             // to, do so now.
             mListView.smoothScrollToPosition(mPosition);
         }
+        updateEmptyView();
     }
 
     @Override
@@ -269,6 +299,46 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         mUseTodayLayout = useTodayLayout;
         if (mForecastAdapter != null) {
             mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
+        }
+    }
+
+    private void updateEmptyView(){
+
+        if(mForecastAdapter.getCount()==0){
+            //전달할게 없으면 view에 출력할 메세지를 설정함.
+
+            TextView textView = (TextView) getView().findViewById(R.id.tv_empty_list_view);
+            int message = R.string.empty_list; //base set up for error message, database is empty
+            @SunshineSyncAdapter.LocationStatus int location = Utility.getLocationStatus(getActivity());
+            switch (message){
+                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN :
+                    message=R.string.empty_list_server_down;
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_SERVER_INVALID :
+                    message=R.string.empty_list_server_error;
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
+                    message=R.string.empty_list_invalid_location;
+                default:
+                    if(!Utility.isNetworkAvailable(getActivity())) {
+                        message = R.string.empty_list_no_network;
+                    }
+                    break;
+            }
+
+            textView.setText(message);
+
+           /* if(textView != null){
+                if(!Utility.isNetworkAvailable(getActivity())){
+                    textView.setText("@string/empty_list");
+                }
+            }*/
+        }
+    }
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if(key.equals(getString(R.string.pref_location_status_key))){
+            updateEmptyView();
         }
     }
 }

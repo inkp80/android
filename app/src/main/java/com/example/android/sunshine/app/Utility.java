@@ -17,8 +17,12 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.text.format.Time;
+
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -27,8 +31,7 @@ import java.util.Date;
 public class Utility {
     public static String getPreferredLocation(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return prefs.getString(context.getString(R.string.pref_location_key),
-                context.getString(R.string.pref_location_default));
+        return prefs.getString(context.getString(R.string.pref_location_key), context.getString(R.string.pref_location_default));
     }
 
     public static boolean isMetric(Context context) {
@@ -246,4 +249,38 @@ public class Utility {
         }
         return -1;
     }
+
+    static public boolean isNetworkAvailable(Context context) {
+        //context를 던지면,
+        //connectivityManager를 선언하고(getSystemService를 통해서)
+        //getNetworkInfo()를 가진 객체를 선언해 해당 정보를 획득하여 참/거짓을 반환
+        ConnectivityManager connectivityManager
+                =(ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork=connectivityManager.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+    @SuppressWarnings("ResourceType")
+    static public @SunshineSyncAdapter.LocationStatus
+    int getLocationStatus(Context context){
+        //SharedPreference에 저장된 정보로부터 현재 상황을 읽어들인다.
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences
+                .getInt(context.getString(R.string.pref_location_status_key)
+                        , SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN);
+    }
+
+    static public void resetLocationStatus(Context context){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor sharedPreference_Editor = sharedPreferences.edit();
+
+        sharedPreference_Editor.putInt(context.getString(R.string.pref_location_status_key),
+                SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN);
+        sharedPreference_Editor.apply();
+    }
+/*
+    -commit() writes the data synchronously (blocking the thread its called from). It then informs you about the success of the operation.
+    -apply() schedules the data to be written asynchronously. It does not inform you about the success of the operation.
+    -If you save with apply() and immediately read via any getX-method, the new value will be returned!
+    -If you called apply() at some point and it's still executing, any calls to commit() will block until all apply-calls and its own commit are finished.*/
+
 }

@@ -9,4 +9,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:divider="@null" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/tv_empty_list_view"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:text="NoWeaterINFORM"
+        />
 </FrameLayout>
